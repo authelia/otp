@@ -18,19 +18,19 @@
 package hotp
 
 import (
-	"github.com/pquerna/otp"
-	"github.com/pquerna/otp/internal"
-	"io"
-
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base32"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"math"
 	"net/url"
 	"strings"
+
+	"github.com/authelia/otp"
+	"github.com/authelia/otp/internal"
 )
 
 const debug = false

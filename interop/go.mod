@@ -1,3 +1,3 @@
-module github.com/pquerna/otp/interop
+module github.com/authelia/otp/interop
 
-go 1.12
+go 1.21
