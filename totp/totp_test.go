@@ -18,13 +18,14 @@
 package totp
 
 import (
-	"github.com/authelia/otp"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"encoding/base32"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/authelia/otp"
 )
 
 type tc struct {

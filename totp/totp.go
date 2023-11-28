@@ -21,7 +21,6 @@ import (
 	"crypto/rand"
 	"encoding/base32"
 	"io"
-	"math"
 	"net/url"
 	"strconv"
 	"time"
@@ -33,9 +32,9 @@ import (
 
 // Validate a TOTP using the current time.
 // A shortcut for ValidateCustom, Validate uses a configuration
-// that is compatible with Google-Authenticator and most clients.
-func Validate(passcode string, secret string) bool {
-	rv, _ := ValidateCustom(
+// that is compatible with Google-Authenticator and most clients. See also ValidateStep.
+func Validate(passcode string, secret string) (valid bool) {
+	valid, _, _ = ValidateCustomStep(
 		passcode,
 		secret,
 		time.Now().UTC(),
@@ -46,7 +45,28 @@ func Validate(passcode string, secret string) bool {
 			Algorithm: otp.AlgorithmSHA1,
 		},
 	)
-	return rv
+
+	return valid
+}
+
+// ValidateStep a TOTP using the current time.
+// A shortcut for ValidateCustomStep, ValidateStep uses a configuration
+// that is compatible with Google-Authenticator and most clients. This function is very similar to Validate except
+// Validate does not return the step. The step can be used to safely record the code used by a user to prevent replay.
+func ValidateStep(passcode string, secret string) (valid bool, step uint64) {
+	valid, step, _ = ValidateCustomStep(
+		passcode,
+		secret,
+		time.Now().UTC(),
+		ValidateOpts{
+			Period:    30,
+			Skew:      1,
+			Digits:    otp.DigitsSix,
+			Algorithm: otp.AlgorithmSHA1,
+		},
+	)
+
+	return valid, step
 }
 
 // GenerateCode creates a TOTP token using the current time.
@@ -82,7 +102,8 @@ func GenerateCodeCustom(secret string, t time.Time, opts ValidateOpts) (passcode
 	if opts.Period == 0 {
 		opts.Period = 30
 	}
-	counter := uint64(math.Floor(float64(t.Unix()) / float64(opts.Period)))
+
+	counter := uint64(t.Unix()) / uint64(opts.Period)
 	passcode, err = hotp.GenerateCodeCustom(secret, counter, hotp.ValidateOpts{
 		Digits:    opts.Digits,
 		Algorithm: opts.Algorithm,
@@ -94,37 +115,43 @@ func GenerateCodeCustom(secret string, t time.Time, opts ValidateOpts) (passcode
 }
 
 // ValidateCustom validates a TOTP given a user specified time and custom options.
-// Most users should use Validate() to provide an interpolatable TOTP experience.
-func ValidateCustom(passcode string, secret string, t time.Time, opts ValidateOpts) (bool, error) {
+// Most users should use Validate to provide an interpolatable TOTP experience.
+func ValidateCustom(passcode string, secret string, t time.Time, opts ValidateOpts) (valid bool, err error) {
+	valid, _, err = ValidateCustomStep(passcode, secret, t, opts)
+
+	return valid, err
+}
+
+// ValidateCustomStep validates a TOTP given a user specified time and custom options.
+// Most users should use ValidateStep to provide an interpolatable TOTP experience.
+func ValidateCustomStep(passcode string, secret string, t time.Time, opts ValidateOpts) (valid bool, step uint64, err error) {
 	if opts.Period == 0 {
 		opts.Period = 30
 	}
 
-	counters := []uint64{}
-	counter := int64(math.Floor(float64(t.Unix()) / float64(opts.Period)))
+	steps := []uint64{uint64(t.Unix()) / uint64(opts.Period)}
 
-	counters = append(counters, uint64(counter))
-	for i := 1; i <= int(opts.Skew); i++ {
-		counters = append(counters, uint64(counter+int64(i)))
-		counters = append(counters, uint64(counter-int64(i)))
+	for i := uint64(1); i <= uint64(opts.Skew); i++ {
+		steps = append(steps, steps[0]+i)
+		steps = append(steps, steps[0]-i)
 	}
 
-	for _, counter := range counters {
-		rv, err := hotp.ValidateCustom(passcode, counter, secret, hotp.ValidateOpts{
+	for _, currentStep := range steps {
+		rv, err := hotp.ValidateCustom(passcode, currentStep, secret, hotp.ValidateOpts{
 			Digits:    opts.Digits,
 			Algorithm: opts.Algorithm,
 		})
 
 		if err != nil {
-			return false, err
+			return false, 0, err
 		}
 
 		if rv == true {
-			return true, nil
+			return true, currentStep, nil
 		}
 	}
 
-	return false, nil
+	return false, 0, nil
 }
 
 // GenerateOpts provides options for Generate().  The default values

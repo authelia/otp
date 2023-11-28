@@ -18,12 +18,13 @@
 package hotp
 
 import (
-	"github.com/authelia/otp"
+	"encoding/base32"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"encoding/base32"
-	"testing"
+	"github.com/authelia/otp"
 )
 
 type tc struct {
