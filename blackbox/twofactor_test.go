@@ -15,7 +15,7 @@
  *
  */
 
-package interop_test
+package blackbox_test
 
 import (
 	"testing"

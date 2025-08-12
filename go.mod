@@ -1,10 +1,12 @@
 module github.com/authelia/otp
 
-go 1.21
+go 1.24.0
+
+toolchain go1.24.6
 
 require (
-	github.com/boombuler/barcode v1.0.1
-	github.com/stretchr/testify v1.8.4
+	github.com/boombuler/barcode v1.1.0
+	github.com/stretchr/testify v1.10.0
 )
 
 require (
