@@ -85,14 +85,20 @@ func GenerateCode(secret string, t time.Time) (string, error) {
 type ValidateOpts struct {
 	// Number of seconds a TOTP hash is valid for. Defaults to 30 seconds.
 	Period uint
+
 	// Periods before or after the current time to allow.  Value of 1 allows up to Period
 	// of either side of the specified time.  Defaults to 0 allowed skews.  Values greater
 	// than 1 are likely sketchy.
 	Skew uint
+
 	// Digits as part of the input. Defaults to 6.
 	Digits otp.Digits
+
 	// Algorithm to use for HMAC. Defaults to SHA1.
 	Algorithm otp.Algorithm
+
+	// Encoder to use for output code.
+	Encoder otp.Encoder
 }
 
 // GenerateCodeCustom takes a timepoint and produces a passcode using a
@@ -107,6 +113,7 @@ func GenerateCodeCustom(secret string, t time.Time, opts ValidateOpts) (passcode
 	passcode, err = hotp.GenerateCodeCustom(secret, counter, hotp.ValidateOpts{
 		Digits:    opts.Digits,
 		Algorithm: opts.Algorithm,
+		Encoder:   opts.Encoder,
 	})
 	if err != nil {
 		return "", err
@@ -140,6 +147,7 @@ func ValidateCustomStep(passcode string, secret string, t time.Time, opts Valida
 		rv, err := hotp.ValidateCustom(passcode, currentStep, secret, hotp.ValidateOpts{
 			Digits:    opts.Digits,
 			Algorithm: opts.Algorithm,
+			Encoder:   opts.Encoder,
 		})
 
 		if err != nil {
