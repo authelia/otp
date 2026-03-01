@@ -7,7 +7,7 @@ toolchain go1.24.6
 require (
 	github.com/authelia/otp v1.0.0
 	github.com/gokyle/twofactor v1.0.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
