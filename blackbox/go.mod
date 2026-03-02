@@ -2,7 +2,7 @@ module github.com/authelia/otp/interop
 
 go 1.24.0
 
-toolchain go1.24.6
+toolchain go1.24.13
 
 require (
 	github.com/authelia/otp v1.0.0
