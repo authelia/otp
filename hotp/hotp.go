@@ -27,6 +27,7 @@ import (
 	"io"
 	"math"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/authelia/otp"
@@ -177,6 +178,8 @@ type GenerateOpts struct {
 	SecretSize uint
 	// Secret to store. Defaults to a randomly generated secret of SecretSize.  You should generally leave this empty.
 	Secret []byte
+	// Initial counter value. Defaults to 0.
+	Counter uint64
 	// Digits to request. Defaults to 6.
 	Digits otp.Digits
 	// Algorithm to use for HMAC. Defaults to SHA1.
@@ -210,7 +213,7 @@ func Generate(opts GenerateOpts) (*otp.Key, error) {
 		opts.Rand = rand.Reader
 	}
 
-	// otpauth://hotp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example
+	// otpauth://hotp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example&counter=0
 
 	v := url.Values{}
 	if len(opts.Secret) != 0 {
@@ -225,6 +228,7 @@ func Generate(opts GenerateOpts) (*otp.Key, error) {
 	}
 
 	v.Set("issuer", opts.Issuer)
+	v.Set("counter", strconv.FormatUint(opts.Counter, 10))
 	v.Set("algorithm", opts.Algorithm.String())
 	v.Set("digits", opts.Digits.String())
 
