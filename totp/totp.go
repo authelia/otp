@@ -112,7 +112,7 @@ func GenerateCodeCustom(secret string, t time.Time, opts ValidateOpts) (passcode
 		opts.Period = 30
 	}
 
-	counter := getT(uint64(t.Unix()), opts.InitialTime) / uint64(opts.Period)
+	counter := getCounter(t, opts.InitialTime, opts.Period)
 	passcode, err = hotp.GenerateCodeCustom(secret, counter, hotp.ValidateOpts{
 		Digits:    opts.Digits,
 		Algorithm: opts.Algorithm,
@@ -139,7 +139,7 @@ func ValidateCustomStep(passcode string, secret string, t time.Time, opts Valida
 		opts.Period = 30
 	}
 
-	steps := []uint64{getT(uint64(t.Unix()), opts.InitialTime) / uint64(opts.Period)}
+	steps := []uint64{getCounter(t, opts.InitialTime, opts.Period)}
 
 	for i := uint64(1); i <= uint64(opts.Skew); i++ {
 		steps = append(steps, steps[0]+i)
@@ -244,7 +244,19 @@ func Generate(opts GenerateOpts) (*otp.Key, error) {
 	return otp.NewKeyFromURL(u.String())
 }
 
-func getT(epoch, t0 uint64) uint64 {
+func getCounter(now time.Time, t0 uint64, X uint) uint64 {
+	t := getT(now, t0)
+
+	return t / uint64(X)
+}
+
+func getT(now time.Time, t0 uint64) uint64 {
+	if now.Unix() <= 0 {
+		return 0
+	}
+
+	epoch := uint64(now.Unix())
+
 	if epoch < t0 {
 		return 0
 	}
