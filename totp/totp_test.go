@@ -20,6 +20,7 @@ package totp
 import (
 	"encoding/base32"
 	"fmt"
+	"math"
 	"net/url"
 	"testing"
 	"time"
@@ -28,6 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/authelia/otp"
+	"github.com/authelia/otp/hotp"
 )
 
 type tc struct {
@@ -278,5 +280,46 @@ func TestValidateMD5Unsupported(t *testing.T) {
 			require.ErrorIs(t, err, otp.ErrValidateAlgorithmUnsupported)
 			require.False(t, valid)
 		}
+	}
+}
+
+func TestValidateSkewUnderflow(t *testing.T) {
+	secSha1 := base32.StdEncoding.EncodeToString([]byte("12345678901234567890"))
+
+	testCases := []struct {
+		name  string
+		t     time.Time
+		opts  ValidateOpts
+		steps []uint64
+	}{
+		{"ShouldNotWrapAtEpoch", time.Unix(10, 0), ValidateOpts{Skew: 1}, []uint64{math.MaxUint64}},
+		{"ShouldNotWrapBeforeEpoch", time.Unix(-100, 0), ValidateOpts{Skew: 1}, []uint64{math.MaxUint64}},
+		{"ShouldNotWrapWithinSkew", time.Unix(40, 0), ValidateOpts{Skew: 2}, []uint64{math.MaxUint64}},
+		{"ShouldNotWrapWithLargerSkew", time.Unix(10, 0), ValidateOpts{Skew: 3}, []uint64{math.MaxUint64, math.MaxUint64 - 1, math.MaxUint64 - 2}},
+		{"ShouldNotWrapBeforeInitialTime", time.Unix(1000, 0), ValidateOpts{Skew: 1, InitialTime: 4600}, []uint64{math.MaxUint64}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.opts.Digits = otp.DigitsSix
+
+			for _, s := range tc.steps {
+				code, err := hotp.GenerateCodeCustom(secSha1, s, hotp.ValidateOpts{Digits: otp.DigitsSix})
+				require.NoError(t, err)
+
+				valid, step, err := ValidateCustomStep(code, secSha1, tc.t, tc.opts)
+				require.NoError(t, err)
+				require.False(t, valid, "code for counter %d should not validate", s)
+				require.Zero(t, step)
+			}
+
+			code, err := GenerateCodeCustom(secSha1, tc.t, tc.opts)
+			require.NoError(t, err)
+
+			valid, step, err := ValidateCustomStep(code, secSha1, tc.t, tc.opts)
+			require.NoError(t, err)
+			require.True(t, valid)
+			require.Equal(t, getCounter(tc.t, tc.opts.InitialTime, 30), step)
+		})
 	}
 }
