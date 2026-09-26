@@ -37,6 +37,9 @@ import (
 // Error when attempting to convert the secret from base32 to raw bytes.
 var ErrValidateSecretInvalidBase32 = errors.New("decoding of secret as base32 failed")
 
+// Error when the secret is empty after decoding, which would make every passcode predictable.
+var ErrValidateSecretEmpty = errors.New("secret must not be empty")
+
 // The user provided passcode length was not expected.
 var ErrValidateInputInvalidLength = errors.New("input length unexpected")
 
