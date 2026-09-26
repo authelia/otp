@@ -171,7 +171,11 @@ func ValidateCustom(passcode string, counter uint64, secret string, opts Validat
 		return false, otp.ErrValidateAlgorithmUnsupported
 	}
 
-	if opts.Digits < 0 || opts.Digits > maxDigits {
+	if opts.Digits == 0 {
+		opts.Digits = otp.DigitsSix
+	}
+
+	if opts.Digits < 1 || opts.Digits > maxDigits {
 		return false, otp.ErrValidateDigitsInvalid
 	}
 

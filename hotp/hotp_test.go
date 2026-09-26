@@ -253,6 +253,10 @@ func TestValidateUnknownEncoder(t *testing.T) {
 			require.Empty(t, code)
 
 			valid, err := ValidateCustom("", 0, secSha1, ValidateOpts{Encoder: encoder})
+			require.ErrorIs(t, err, otp.ErrValidateInputInvalidLength)
+			require.False(t, valid)
+
+			valid, err = ValidateCustom("000000", 0, secSha1, ValidateOpts{Encoder: encoder})
 			require.ErrorIs(t, err, otp.ErrValidateEncoderUnknown)
 			require.False(t, valid)
 		})
@@ -307,5 +311,19 @@ func TestValidateDigitsRange(t *testing.T) {
 				require.True(t, valid)
 			})
 		}
+	}
+}
+
+func TestValidateDigitsDefault(t *testing.T) {
+	secSha1 := base32.StdEncoding.EncodeToString([]byte("12345678901234567890"))
+
+	valid, err := ValidateCustom("755224", 0, secSha1, ValidateOpts{})
+	require.NoError(t, err)
+	require.True(t, valid)
+
+	for _, passcode := range []string{"", "   ", "75522", "7552240"} {
+		valid, err = ValidateCustom(passcode, 0, secSha1, ValidateOpts{})
+		require.ErrorIs(t, err, otp.ErrValidateInputInvalidLength)
+		require.False(t, valid)
 	}
 }

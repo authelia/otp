@@ -258,6 +258,10 @@ func TestValidateUnknownEncoder(t *testing.T) {
 			require.Empty(t, code)
 
 			valid, err := ValidateCustom("", secSha1, n, ValidateOpts{Encoder: encoder})
+			require.ErrorIs(t, err, otp.ErrValidateInputInvalidLength)
+			require.False(t, valid)
+
+			valid, err = ValidateCustom("000000", secSha1, n, ValidateOpts{Encoder: encoder})
 			require.ErrorIs(t, err, otp.ErrValidateEncoderUnknown)
 			require.False(t, valid)
 		})
@@ -375,4 +379,21 @@ func TestValidateTimeBeforeInitialTime(t *testing.T) {
 			require.Zero(t, step)
 		})
 	}
+}
+
+func TestValidateDigitsDefault(t *testing.T) {
+	secSha1 := base32.StdEncoding.EncodeToString([]byte("12345678901234567890"))
+	n := time.Unix(59, 0).UTC()
+
+	code, err := GenerateCodeCustom(secSha1, n, ValidateOpts{})
+	require.NoError(t, err)
+	require.Len(t, code, 6)
+
+	valid, err := ValidateCustom(code, secSha1, n, ValidateOpts{})
+	require.NoError(t, err)
+	require.True(t, valid)
+
+	valid, err = ValidateCustom("", secSha1, n, ValidateOpts{})
+	require.ErrorIs(t, err, otp.ErrValidateInputInvalidLength)
+	require.False(t, valid)
 }
