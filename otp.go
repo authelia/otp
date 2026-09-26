@@ -145,7 +145,7 @@ func (k *Key) AccountName() string {
 		return p
 	}
 
-	return p[i+1:]
+	return strings.TrimLeft(p[i+1:], " ")
 }
 
 // Secret returns the opaque secret for this Key.

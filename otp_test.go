@@ -79,3 +79,25 @@ func TestKeyDigits(t *testing.T) {
 		})
 	}
 }
+
+func TestKeyAccountNameLeadingSpaces(t *testing.T) {
+	testCases := []struct {
+		have        string
+		issuer      string
+		accountName string
+	}{
+		{"otpauth://totp/ACME%20Co:%20john.doe@email.com?secret=JBSWY3DPEHPK3PXP", "ACME Co", "john.doe@email.com"},
+		{"otpauth://totp/ACME%20Co:%20%20%20john.doe@email.com?secret=JBSWY3DPEHPK3PXP", "ACME Co", "john.doe@email.com"},
+		{"otpauth://totp/ACME%20Co:john.doe%20@email.com?secret=JBSWY3DPEHPK3PXP", "ACME Co", "john.doe @email.com"},
+		{"otpauth://totp/ACME%20Co:%20john.doe@email.com?secret=JBSWY3DPEHPK3PXP&issuer=ACME%20Co", "ACME Co", "john.doe@email.com"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.have, func(t *testing.T) {
+			k, err := NewKeyFromURL(tc.have)
+			require.NoError(t, err)
+			require.Equal(t, tc.issuer, k.Issuer())
+			require.Equal(t, tc.accountName, k.AccountName())
+		})
+	}
+}
