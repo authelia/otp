@@ -55,3 +55,27 @@ func TestKeyWithNewLine(t *testing.T) {
 	sec := w.Secret()
 	require.Equal(t, "JBSWY3DPEHPK3PXP", sec)
 }
+
+func TestKeyDigits(t *testing.T) {
+	testCases := []struct {
+		have     string
+		expected Digits
+	}{
+		{"6", DigitsSix},
+		{"8", DigitsEight},
+		{"12", Digits(12)},
+		{"", DigitsSix},
+		{"abc", DigitsSix},
+		{"-1", DigitsSix},
+		{"4294967295", DigitsSix},
+		{"18446744073709551615", DigitsSix},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.have, func(t *testing.T) {
+			k, err := NewKeyFromURL("otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example&digits=" + tc.have)
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, k.Digits())
+		})
+	}
+}

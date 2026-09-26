@@ -20,6 +20,7 @@ package hotp
 import (
 	"encoding/base32"
 	"fmt"
+	"math"
 	"net/url"
 	"testing"
 
@@ -271,6 +272,40 @@ func TestValidateMD5Unsupported(t *testing.T) {
 			valid, err := ValidateCustom(passcode, counter, secSha1, opts)
 			require.ErrorIs(t, err, otp.ErrValidateAlgorithmUnsupported)
 			require.False(t, valid)
+		}
+	}
+}
+
+func TestValidateDigitsRange(t *testing.T) {
+	secSha1 := base32.StdEncoding.EncodeToString([]byte("12345678901234567890"))
+
+	for _, encoder := range []otp.Encoder{otp.EncoderDefault, otp.EncoderSteam} {
+		for _, digits := range []otp.Digits{-1, -6, 11, 20, 1000001, math.MinInt} {
+			t.Run(fmt.Sprintf("%s/%d", encoder, digits), func(t *testing.T) {
+				opts := ValidateOpts{Digits: digits, Encoder: encoder}
+
+				code, err := GenerateCodeCustom(secSha1, 0, opts)
+				require.ErrorIs(t, err, otp.ErrValidateDigitsInvalid)
+				require.Empty(t, code)
+
+				valid, err := ValidateCustom("755224", 0, secSha1, opts)
+				require.ErrorIs(t, err, otp.ErrValidateDigitsInvalid)
+				require.False(t, valid)
+			})
+		}
+
+		for _, digits := range []otp.Digits{1, 5, otp.DigitsSix, otp.DigitsEight, 10} {
+			t.Run(fmt.Sprintf("%s/%d", encoder, digits), func(t *testing.T) {
+				opts := ValidateOpts{Digits: digits, Encoder: encoder}
+
+				code, err := GenerateCodeCustom(secSha1, 0, opts)
+				require.NoError(t, err)
+				require.Len(t, code, digits.Length())
+
+				valid, err := ValidateCustom(code, 0, secSha1, opts)
+				require.NoError(t, err)
+				require.True(t, valid)
+			})
 		}
 	}
 }

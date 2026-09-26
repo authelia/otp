@@ -91,7 +91,7 @@ type ValidateOpts struct {
 	// than 1 are likely sketchy.
 	Skew uint
 
-	// Digits as part of the input. Defaults to 6.
+	// Digits as part of the input. Defaults to 6. Values outside 1 to 10 return ErrValidateDigitsInvalid.
 	Digits otp.Digits
 
 	// Algorithm to use for HMAC. Defaults to SHA1.
