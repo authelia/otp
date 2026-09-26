@@ -19,6 +19,7 @@ package totp
 
 import (
 	"encoding/base32"
+	"net/url"
 	"testing"
 	"time"
 
@@ -161,6 +162,28 @@ func TestGenerate(t *testing.T) {
 	sec, err := b32NoPadding.DecodeString(k.Secret())
 	require.NoError(t, err, "Secret wa not valid base32")
 	require.Equal(t, sec, []byte("helloworld"), "Specified Secret was not kept")
+}
+
+func TestGenerateIssuerQueryInjection(t *testing.T) {
+	issuer := "Evil&secret=AAAAAAAAAAAAAAAA&period=60&encoder=steam"
+
+	k, err := Generate(GenerateOpts{
+		Issuer:      issuer,
+		AccountName: "alice@example.com",
+	})
+	require.NoError(t, err)
+
+	u, err := url.Parse(k.String())
+	require.NoError(t, err)
+
+	q := u.Query()
+	require.Len(t, q["secret"], 1, "URL must contain exactly one secret")
+	require.Len(t, q["period"], 1, "URL must contain exactly one period")
+	require.NotContains(t, q, "encoder")
+	require.Equal(t, issuer, k.Issuer())
+	require.NotEqual(t, "AAAAAAAAAAAAAAAA", k.Secret())
+	require.Equal(t, uint64(30), k.Period())
+	require.Equal(t, otp.EncoderDefault, k.Encoder())
 }
 
 func TestGoogleLowerCaseSecret(t *testing.T) {
