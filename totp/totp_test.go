@@ -273,8 +273,10 @@ func TestValidateMD5Unsupported(t *testing.T) {
 		require.ErrorIs(t, err, otp.ErrValidateAlgorithmUnsupported)
 		require.Empty(t, code)
 
-		valid, err := ValidateCustom("000000", secSha1, n, opts)
-		require.ErrorIs(t, err, otp.ErrValidateAlgorithmUnsupported)
-		require.False(t, valid)
+		for _, passcode := range []string{"000000", "", "0000", "00000000"} {
+			valid, err := ValidateCustom(passcode, secSha1, n, opts)
+			require.ErrorIs(t, err, otp.ErrValidateAlgorithmUnsupported)
+			require.False(t, valid)
+		}
 	}
 }

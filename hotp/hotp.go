@@ -160,6 +160,10 @@ func GenerateCodeCustom(secret string, counter uint64, opts ValidateOpts) (passc
 // ValidateCustom validates an HOTP with customizable options. Most users should
 // use Validate().
 func ValidateCustom(passcode string, counter uint64, secret string, opts ValidateOpts) (bool, error) {
+	if opts.Algorithm == otp.AlgorithmMD5 {
+		return false, otp.ErrValidateAlgorithmUnsupported
+	}
+
 	passcode = strings.TrimSpace(passcode)
 
 	if len(passcode) != opts.Digits.Length() {
