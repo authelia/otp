@@ -143,7 +143,10 @@ func ValidateCustomStep(passcode string, secret string, t time.Time, opts Valida
 
 	for i := uint64(1); i <= uint64(opts.Skew); i++ {
 		steps = append(steps, steps[0]+i)
-		steps = append(steps, steps[0]-i)
+
+		if steps[0] >= i {
+			steps = append(steps, steps[0]-i)
+		}
 	}
 
 	for _, currentStep := range steps {
