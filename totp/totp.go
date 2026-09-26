@@ -100,7 +100,8 @@ type ValidateOpts struct {
 	// Encoder to use for output code.
 	Encoder otp.Encoder
 
-	// InitialTime is the Unix time from which to start counting time steps (T0 per RFC 6238). Defaults to 0.
+	// InitialTime is the Unix time in seconds from which to start counting time steps (T0 per RFC 6238). Defaults to 0.
+	// Times before InitialTime return ErrValidateTimeBeforeInitialTime.
 	InitialTime uint64
 }
 
@@ -112,7 +113,11 @@ func GenerateCodeCustom(secret string, t time.Time, opts ValidateOpts) (passcode
 		opts.Period = 30
 	}
 
-	counter := getCounter(t, opts.InitialTime, opts.Period)
+	counter, err := getCounter(t, opts.InitialTime, opts.Period)
+	if err != nil {
+		return "", err
+	}
+
 	passcode, err = hotp.GenerateCodeCustom(secret, counter, hotp.ValidateOpts{
 		Digits:    opts.Digits,
 		Algorithm: opts.Algorithm,
@@ -139,7 +144,12 @@ func ValidateCustomStep(passcode string, secret string, t time.Time, opts Valida
 		opts.Period = 30
 	}
 
-	steps := []uint64{getCounter(t, opts.InitialTime, opts.Period)}
+	counter, err := getCounter(t, opts.InitialTime, opts.Period)
+	if err != nil {
+		return false, 0, err
+	}
+
+	steps := []uint64{counter}
 
 	for i := uint64(1); i <= uint64(opts.Skew); i++ {
 		steps = append(steps, steps[0]+i)
@@ -247,22 +257,25 @@ func Generate(opts GenerateOpts) (*otp.Key, error) {
 	return otp.NewKeyFromURL(u.String())
 }
 
-func getCounter(now time.Time, t0 uint64, X uint) uint64 {
-	t := getT(now, t0)
+func getCounter(now time.Time, t0 uint64, X uint) (uint64, error) {
+	t, err := getT(now, t0)
+	if err != nil {
+		return 0, err
+	}
 
-	return t / uint64(X)
+	return t / uint64(X), nil
 }
 
-func getT(now time.Time, t0 uint64) uint64 {
-	if now.Unix() <= 0 {
-		return 0
+func getT(now time.Time, t0 uint64) (uint64, error) {
+	if now.Unix() < 0 {
+		return 0, otp.ErrValidateTimeBeforeInitialTime
 	}
 
 	epoch := uint64(now.Unix())
 
 	if epoch < t0 {
-		return 0
+		return 0, otp.ErrValidateTimeBeforeInitialTime
 	}
 
-	return epoch - t0
+	return epoch - t0, nil
 }
