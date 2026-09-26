@@ -77,6 +77,10 @@ func GenerateCode(secret string, counter uint64) (string, error) {
 // GenerateCodeCustom uses a counter and secret value and options struct to
 // create a passcode.
 func GenerateCodeCustom(secret string, counter uint64, opts ValidateOpts) (passcode string, err error) {
+	if opts.Algorithm == otp.AlgorithmMD5 {
+		return "", otp.ErrValidateAlgorithmUnsupported
+	}
+
 	//Set default value
 	if opts.Digits == 0 {
 		opts.Digits = otp.DigitsSix
