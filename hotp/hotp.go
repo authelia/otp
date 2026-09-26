@@ -146,6 +146,8 @@ func GenerateCodeCustom(secret string, counter uint64, opts ValidateOpts) (passc
 			c := alphabet[digit]
 			passcode += string(c)
 		}
+	default:
+		return "", otp.ErrValidateEncoderUnknown
 	}
 
 	return
