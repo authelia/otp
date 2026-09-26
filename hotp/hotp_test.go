@@ -367,3 +367,24 @@ func TestGenerateSecretSize(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []byte("helloworld"), secret)
 }
+
+func TestGenerateIssuerColon(t *testing.T) {
+	for _, issuer := range []string{"Acme:Corp", ":Acme", "Acme:", ":"} {
+		t.Run(issuer, func(t *testing.T) {
+			k, err := Generate(GenerateOpts{
+				Issuer:      issuer,
+				AccountName: "alice@example.com",
+			})
+			require.ErrorIs(t, err, otp.ErrGenerateIssuerInvalid)
+			require.Nil(t, k)
+		})
+	}
+
+	k, err := Generate(GenerateOpts{
+		Issuer:      "Acme Corp",
+		AccountName: "domain:alice",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Acme Corp", k.Issuer())
+	require.Equal(t, "domain:alice", k.AccountName())
+}
