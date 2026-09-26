@@ -241,3 +241,19 @@ func TestValidateEmptySecret(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateUnknownEncoder(t *testing.T) {
+	secSha1 := base32.StdEncoding.EncodeToString([]byte("12345678901234567890"))
+
+	for _, encoder := range []otp.Encoder{"Steam", "STEAM", " steam", "bogus"} {
+		t.Run(string(encoder), func(t *testing.T) {
+			code, err := GenerateCodeCustom(secSha1, 0, ValidateOpts{Encoder: encoder})
+			require.ErrorIs(t, err, otp.ErrValidateEncoderUnknown)
+			require.Empty(t, code)
+
+			valid, err := ValidateCustom("", 0, secSha1, ValidateOpts{Encoder: encoder})
+			require.ErrorIs(t, err, otp.ErrValidateEncoderUnknown)
+			require.False(t, valid)
+		})
+	}
+}

@@ -43,6 +43,9 @@ var ErrValidateSecretEmpty = errors.New("secret must not be empty")
 // The user provided passcode length was not expected.
 var ErrValidateInputInvalidLength = errors.New("input length unexpected")
 
+// The encoder is not one of the supported encoders.
+var ErrValidateEncoderUnknown = errors.New("encoder is not supported")
+
 // When generating a Key, the Issuer must be set.
 var ErrGenerateMissingIssuer = errors.New("issuer must be set")
 
