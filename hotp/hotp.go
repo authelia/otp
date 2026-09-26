@@ -36,6 +36,8 @@ import (
 
 const debug = false
 
+const maxDigits = 10
+
 // Validate a HOTP passcode given a counter and secret.
 // This is a shortcut for ValidateCustom, with parameters that
 // are compataible with Google-Authenticator.
@@ -54,7 +56,7 @@ func Validate(passcode string, counter uint64, secret string) bool {
 
 // ValidateOpts provides options for ValidateCustom().
 type ValidateOpts struct {
-	// Digits as part of the input. Defaults to 6.
+	// Digits as part of the input. Defaults to 6. Values outside 1 to 10 return ErrValidateDigitsInvalid.
 	Digits otp.Digits
 
 	// Algorithm to use for HMAC. Defaults to SHA1.
@@ -85,6 +87,11 @@ func GenerateCodeCustom(secret string, counter uint64, opts ValidateOpts) (passc
 	if opts.Digits == 0 {
 		opts.Digits = otp.DigitsSix
 	}
+
+	if opts.Digits < 1 || opts.Digits > maxDigits {
+		return "", otp.ErrValidateDigitsInvalid
+	}
+
 	// As noted in issue #10 and #17 this adds support for TOTP secrets that are
 	// missing their padding.
 	secret = strings.TrimSpace(secret)
@@ -162,6 +169,14 @@ func GenerateCodeCustom(secret string, counter uint64, opts ValidateOpts) (passc
 func ValidateCustom(passcode string, counter uint64, secret string, opts ValidateOpts) (bool, error) {
 	if opts.Algorithm == otp.AlgorithmMD5 {
 		return false, otp.ErrValidateAlgorithmUnsupported
+	}
+
+	if opts.Digits == 0 {
+		opts.Digits = otp.DigitsSix
+	}
+
+	if opts.Digits < 1 || opts.Digits > maxDigits {
+		return false, otp.ErrValidateDigitsInvalid
 	}
 
 	passcode = strings.TrimSpace(passcode)

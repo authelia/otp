@@ -52,6 +52,9 @@ var ErrValidateAlgorithmUnsupported = errors.New("algorithm is not supported")
 // The time is before the initial time (T0), which includes any time before the Unix epoch.
 var ErrValidateTimeBeforeInitialTime = errors.New("time is before the initial time")
 
+// The number of digits is not between 1 and 10.
+var ErrValidateDigitsInvalid = errors.New("digits must be between 1 and 10")
+
 // When generating a Key, the Issuer must be set.
 var ErrGenerateMissingIssuer = errors.New("issuer must be set")
 
@@ -165,7 +168,7 @@ func (k *Key) Period() uint64 {
 func (k *Key) Digits() Digits {
 	q := k.url.Query()
 
-	if u, err := strconv.ParseUint(q.Get("digits"), 10, 64); err == nil {
+	if u, err := strconv.ParseUint(q.Get("digits"), 10, 8); err == nil {
 		return Digits(u)
 	}
 
