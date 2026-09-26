@@ -61,6 +61,9 @@ var ErrGenerateMissingIssuer = errors.New("issuer must be set")
 // When generating a Key, the Account Name must be set.
 var ErrGenerateMissingAccountName = errors.New("accountName must be set")
 
+// When generating a Key, the SecretSize must be between 16 and 128 bytes.
+var ErrGenerateSecretSizeInvalid = errors.New("secret size must be between 16 and 128 bytes")
+
 // Key represents an TOTP or HTOP key.
 type Key struct {
 	orig string
