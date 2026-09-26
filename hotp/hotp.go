@@ -203,7 +203,7 @@ type GenerateOpts struct {
 	Issuer string
 	// Name of the User's Account (eg, email address)
 	AccountName string
-	// Size in size of the generated Secret. Defaults to 10 bytes.
+	// Size in size of the generated Secret. Defaults to 20 bytes. Must be between 16 and 128 bytes.
 	SecretSize uint
 	// Secret to store. Defaults to a randomly generated secret of SecretSize.  You should generally leave this empty.
 	Secret []byte
@@ -231,7 +231,7 @@ func Generate(opts GenerateOpts) (*otp.Key, error) {
 	}
 
 	if opts.SecretSize == 0 {
-		opts.SecretSize = 10
+		opts.SecretSize = 20
 	}
 
 	if opts.Digits == 0 {
@@ -248,6 +248,10 @@ func Generate(opts GenerateOpts) (*otp.Key, error) {
 	if len(opts.Secret) != 0 {
 		v.Set("secret", b32NoPadding.EncodeToString(opts.Secret))
 	} else {
+		if opts.SecretSize < internal.SecretSizeMinimum || opts.SecretSize > internal.SecretSizeMaximum {
+			return nil, otp.ErrGenerateSecretSizeInvalid
+		}
+
 		secret := make([]byte, opts.SecretSize)
 		_, err := io.ReadFull(opts.Rand, secret)
 		if err != nil {

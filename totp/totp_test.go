@@ -151,7 +151,7 @@ func TestGenerate(t *testing.T) {
 	k, err = Generate(GenerateOpts{
 		Issuer:      "SnakeOil",
 		AccountName: "alice@example.com",
-		SecretSize:  13, // anything that is not divisible by 5, really
+		SecretSize:  17, // anything that is not divisible by 5, really
 	})
 	require.NoError(t, err, "Secret size is valid when length not divisible by 5.")
 	require.NotContains(t, k.Secret(), "=", "Secret has no escaped characters.")
@@ -396,4 +396,44 @@ func TestValidateDigitsDefault(t *testing.T) {
 	valid, err = ValidateCustom("", secSha1, n, ValidateOpts{})
 	require.ErrorIs(t, err, otp.ErrValidateInputInvalidLength)
 	require.False(t, valid)
+}
+
+func TestGenerateSecretSize(t *testing.T) {
+	for _, size := range []uint{1, 10, 15, 129, 1 << 20, math.MaxUint} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			k, err := Generate(GenerateOpts{
+				Issuer:      "SnakeOil",
+				AccountName: "alice@example.com",
+				SecretSize:  size,
+			})
+			require.ErrorIs(t, err, otp.ErrGenerateSecretSizeInvalid)
+			require.Nil(t, k)
+		})
+	}
+
+	for _, size := range []uint{16, 20, 32, 128} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			k, err := Generate(GenerateOpts{
+				Issuer:      "SnakeOil",
+				AccountName: "alice@example.com",
+				SecretSize:  size,
+			})
+			require.NoError(t, err)
+
+			secret, err := b32NoPadding.DecodeString(k.Secret())
+			require.NoError(t, err)
+			require.Len(t, secret, int(size))
+		})
+	}
+
+	k, err := Generate(GenerateOpts{
+		Issuer:      "SnakeOil",
+		AccountName: "alice@example.com",
+		Secret:      []byte("helloworld"),
+	})
+	require.NoError(t, err)
+
+	secret, err := b32NoPadding.DecodeString(k.Secret())
+	require.NoError(t, err)
+	require.Equal(t, []byte("helloworld"), secret)
 }

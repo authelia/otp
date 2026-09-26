@@ -155,7 +155,7 @@ func TestGenerate(t *testing.T) {
 	require.NoError(t, err, "generate basic HOTP")
 	require.Equal(t, "SnakeOil", k.Issuer(), "Extracting Issuer")
 	require.Equal(t, "alice@example.com", k.AccountName(), "Extracting Account Name")
-	require.Equal(t, 16, len(k.Secret()), "Secret is 16 bytes long as base32.")
+	require.Equal(t, 32, len(k.Secret()), "Secret is 32 bytes long as base32.")
 
 	k, err = Generate(GenerateOpts{
 		Issuer:      "Snake Oil",
@@ -326,4 +326,44 @@ func TestValidateDigitsDefault(t *testing.T) {
 		require.ErrorIs(t, err, otp.ErrValidateInputInvalidLength)
 		require.False(t, valid)
 	}
+}
+
+func TestGenerateSecretSize(t *testing.T) {
+	for _, size := range []uint{1, 10, 15, 129, 1 << 20, math.MaxUint} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			k, err := Generate(GenerateOpts{
+				Issuer:      "SnakeOil",
+				AccountName: "alice@example.com",
+				SecretSize:  size,
+			})
+			require.ErrorIs(t, err, otp.ErrGenerateSecretSizeInvalid)
+			require.Nil(t, k)
+		})
+	}
+
+	for _, size := range []uint{16, 20, 32, 128} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			k, err := Generate(GenerateOpts{
+				Issuer:      "SnakeOil",
+				AccountName: "alice@example.com",
+				SecretSize:  size,
+			})
+			require.NoError(t, err)
+
+			secret, err := b32NoPadding.DecodeString(k.Secret())
+			require.NoError(t, err)
+			require.Len(t, secret, int(size))
+		})
+	}
+
+	k, err := Generate(GenerateOpts{
+		Issuer:      "SnakeOil",
+		AccountName: "alice@example.com",
+		Secret:      []byte("helloworld"),
+	})
+	require.NoError(t, err)
+
+	secret, err := b32NoPadding.DecodeString(k.Secret())
+	require.NoError(t, err)
+	require.Equal(t, []byte("helloworld"), secret)
 }

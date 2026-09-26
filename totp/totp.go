@@ -187,7 +187,7 @@ type GenerateOpts struct {
 	AccountName string
 	// Number of seconds a TOTP hash is valid for. Defaults to 30 seconds.
 	Period uint
-	// Size in size of the generated Secret. Defaults to 20 bytes.
+	// Size in size of the generated Secret. Defaults to 20 bytes. Must be between 16 and 128 bytes.
 	SecretSize uint
 	// Secret to store. Defaults to a randomly generated secret of SecretSize.  You should generally leave this empty.
 	Secret []byte
@@ -234,6 +234,10 @@ func Generate(opts GenerateOpts) (*otp.Key, error) {
 	if len(opts.Secret) != 0 {
 		v.Set("secret", b32NoPadding.EncodeToString(opts.Secret))
 	} else {
+		if opts.SecretSize < internal.SecretSizeMinimum || opts.SecretSize > internal.SecretSizeMaximum {
+			return nil, otp.ErrGenerateSecretSizeInvalid
+		}
+
 		secret := make([]byte, opts.SecretSize)
 		_, err := io.ReadFull(opts.Rand, secret)
 		if err != nil {
