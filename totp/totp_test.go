@@ -293,10 +293,9 @@ func TestValidateSkewUnderflow(t *testing.T) {
 		steps []uint64
 	}{
 		{"ShouldNotWrapAtEpoch", time.Unix(10, 0), ValidateOpts{Skew: 1}, []uint64{math.MaxUint64}},
-		{"ShouldNotWrapBeforeEpoch", time.Unix(-100, 0), ValidateOpts{Skew: 1}, []uint64{math.MaxUint64}},
 		{"ShouldNotWrapWithinSkew", time.Unix(40, 0), ValidateOpts{Skew: 2}, []uint64{math.MaxUint64}},
 		{"ShouldNotWrapWithLargerSkew", time.Unix(10, 0), ValidateOpts{Skew: 3}, []uint64{math.MaxUint64, math.MaxUint64 - 1, math.MaxUint64 - 2}},
-		{"ShouldNotWrapBeforeInitialTime", time.Unix(1000, 0), ValidateOpts{Skew: 1, InitialTime: 4600}, []uint64{math.MaxUint64}},
+		{"ShouldNotWrapAfterInitialTime", time.Unix(4610, 0), ValidateOpts{Skew: 1, InitialTime: 4600}, []uint64{math.MaxUint64}},
 	}
 
 	for _, tc := range testCases {
@@ -319,7 +318,61 @@ func TestValidateSkewUnderflow(t *testing.T) {
 			valid, step, err := ValidateCustomStep(code, secSha1, tc.t, tc.opts)
 			require.NoError(t, err)
 			require.True(t, valid)
-			require.Equal(t, getCounter(tc.t, tc.opts.InitialTime, 30), step)
+			require.Equal(t, uint64(tc.t.Unix()-int64(tc.opts.InitialTime))/30, step)
+		})
+	}
+}
+
+func TestValidateTimeBeforeInitialTime(t *testing.T) {
+	secSha1 := base32.StdEncoding.EncodeToString([]byte("12345678901234567890"))
+
+	testCases := []struct {
+		name string
+		t    time.Time
+		opts ValidateOpts
+	}{
+		{"ShouldRejectBeforeEpoch", time.Unix(-1, 0), ValidateOpts{}},
+		{"ShouldRejectWellBeforeEpoch", time.Unix(-1000000000, 0), ValidateOpts{}},
+		{"ShouldRejectZeroTime", time.Time{}, ValidateOpts{}},
+		{"ShouldRejectBeforeInitialTime", time.Unix(4599, 0), ValidateOpts{InitialTime: 4600}},
+		{"ShouldRejectWellBeforeInitialTime", time.Unix(1000, 0), ValidateOpts{InitialTime: 1700000000000}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.opts.Digits = otp.DigitsSix
+			tc.opts.Skew = 1
+
+			code, err := GenerateCodeCustom(secSha1, tc.t, tc.opts)
+			require.ErrorIs(t, err, otp.ErrValidateTimeBeforeInitialTime)
+			require.Empty(t, code)
+
+			valid, step, err := ValidateCustomStep("755224", secSha1, tc.t, tc.opts)
+			require.ErrorIs(t, err, otp.ErrValidateTimeBeforeInitialTime)
+			require.False(t, valid)
+			require.Zero(t, step)
+		})
+	}
+
+	for _, tc := range []struct {
+		name string
+		t    time.Time
+		opts ValidateOpts
+	}{
+		{"ShouldAcceptEpoch", time.Unix(0, 0), ValidateOpts{}},
+		{"ShouldAcceptInitialTime", time.Unix(4600, 0), ValidateOpts{InitialTime: 4600}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.opts.Digits = otp.DigitsSix
+
+			code, err := GenerateCodeCustom(secSha1, tc.t, tc.opts)
+			require.NoError(t, err)
+			require.Equal(t, "755224", code)
+
+			valid, step, err := ValidateCustomStep(code, secSha1, tc.t, tc.opts)
+			require.NoError(t, err)
+			require.True(t, valid)
+			require.Zero(t, step)
 		})
 	}
 }

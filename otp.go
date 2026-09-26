@@ -49,6 +49,9 @@ var ErrValidateEncoderUnknown = errors.New("encoder is not supported")
 // The algorithm is not supported for generating or validating passcodes.
 var ErrValidateAlgorithmUnsupported = errors.New("algorithm is not supported")
 
+// The time is before the initial time (T0), which includes any time before the Unix epoch.
+var ErrValidateTimeBeforeInitialTime = errors.New("time is before the initial time")
+
 // When generating a Key, the Issuer must be set.
 var ErrGenerateMissingIssuer = errors.New("issuer must be set")
 
