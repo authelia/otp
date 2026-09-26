@@ -97,6 +97,10 @@ func GenerateCodeCustom(secret string, counter uint64, opts ValidateOpts) (passc
 		return "", otp.ErrValidateSecretInvalidBase32
 	}
 
+	if len(secretBytes) == 0 {
+		return "", otp.ErrValidateSecretEmpty
+	}
+
 	buf := make([]byte, 8)
 	mac := hmac.New(opts.Algorithm.Hash, secretBytes)
 	binary.BigEndian.PutUint64(buf, counter)

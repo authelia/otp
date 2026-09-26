@@ -19,6 +19,7 @@ package totp
 
 import (
 	"encoding/base32"
+	"fmt"
 	"net/url"
 	"testing"
 	"time"
@@ -221,4 +222,25 @@ func TestSteamSecret(t *testing.T) {
 	valid, err := ValidateCustom(code, w.Secret(), n, opts)
 	require.NoError(t, err)
 	require.True(t, valid)
+}
+
+func TestValidateEmptySecret(t *testing.T) {
+	n := time.Unix(59, 0).UTC()
+
+	for _, secret := range []string{"", " ", "\t\n \r"} {
+		t.Run(fmt.Sprintf("%q", secret), func(t *testing.T) {
+			code, err := GenerateCode(secret, n)
+			require.ErrorIs(t, err, otp.ErrValidateSecretEmpty)
+			require.Empty(t, code)
+
+			valid, err := ValidateCustom("824781", secret, n, ValidateOpts{
+				Digits:    otp.DigitsSix,
+				Algorithm: otp.AlgorithmSHA1,
+			})
+			require.ErrorIs(t, err, otp.ErrValidateSecretEmpty)
+			require.False(t, valid)
+
+			require.False(t, Validate("824781", secret))
+		})
+	}
 }

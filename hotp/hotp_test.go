@@ -19,6 +19,7 @@ package hotp
 
 import (
 	"encoding/base32"
+	"fmt"
 	"net/url"
 	"testing"
 
@@ -220,4 +221,23 @@ func TestGenerateIssuerQueryInjection(t *testing.T) {
 	require.Equal(t, []string{"0"}, q["counter"], "URL must contain exactly one counter")
 	require.Equal(t, issuer, k.Issuer())
 	require.NotEqual(t, "AAAAAAAAAAAAAAAA", k.Secret())
+}
+
+func TestValidateEmptySecret(t *testing.T) {
+	for _, secret := range []string{"", " ", "\t\n \r"} {
+		t.Run(fmt.Sprintf("%q", secret), func(t *testing.T) {
+			code, err := GenerateCode(secret, 0)
+			require.ErrorIs(t, err, otp.ErrValidateSecretEmpty)
+			require.Empty(t, code)
+
+			valid, err := ValidateCustom("328482", 0, secret, ValidateOpts{
+				Digits:    otp.DigitsSix,
+				Algorithm: otp.AlgorithmSHA1,
+			})
+			require.ErrorIs(t, err, otp.ErrValidateSecretEmpty)
+			require.False(t, valid)
+
+			require.False(t, Validate("328482", 0, secret))
+		})
+	}
 }
