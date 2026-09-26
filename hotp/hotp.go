@@ -79,7 +79,7 @@ func GenerateCode(secret string, counter uint64) (string, error) {
 // GenerateCodeCustom uses a counter and secret value and options struct to
 // create a passcode.
 func GenerateCodeCustom(secret string, counter uint64, opts ValidateOpts) (passcode string, err error) {
-	if opts.Algorithm == otp.AlgorithmMD5 {
+	if !internal.IsAlgorithmSupported(opts.Algorithm) {
 		return "", otp.ErrValidateAlgorithmUnsupported
 	}
 
@@ -167,7 +167,7 @@ func GenerateCodeCustom(secret string, counter uint64, opts ValidateOpts) (passc
 // ValidateCustom validates an HOTP with customizable options. Most users should
 // use Validate().
 func ValidateCustom(passcode string, counter uint64, secret string, opts ValidateOpts) (bool, error) {
-	if opts.Algorithm == otp.AlgorithmMD5 {
+	if !internal.IsAlgorithmSupported(opts.Algorithm) {
 		return false, otp.ErrValidateAlgorithmUnsupported
 	}
 
@@ -228,6 +228,10 @@ func Generate(opts GenerateOpts) (*otp.Key, error) {
 
 	if opts.AccountName == "" {
 		return nil, otp.ErrGenerateMissingAccountName
+	}
+
+	if !internal.IsAlgorithmSupported(opts.Algorithm) {
+		return nil, otp.ErrValidateAlgorithmUnsupported
 	}
 
 	if opts.SecretSize == 0 {
