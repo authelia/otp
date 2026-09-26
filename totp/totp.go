@@ -88,7 +88,7 @@ type ValidateOpts struct {
 
 	// Periods before or after the current time to allow.  Value of 1 allows up to Period
 	// of either side of the specified time.  Defaults to 0 allowed skews.  Values greater
-	// than 1 are likely sketchy.
+	// than 1 are likely sketchy.  Values greater than 10 return ErrValidateSkewTooLarge.
 	Skew uint
 
 	// Digits as part of the input. Defaults to 6. Values outside 1 to 10 return ErrValidateDigitsInvalid.
@@ -142,6 +142,10 @@ func ValidateCustom(passcode string, secret string, t time.Time, opts ValidateOp
 func ValidateCustomStep(passcode string, secret string, t time.Time, opts ValidateOpts) (valid bool, step uint64, err error) {
 	if opts.Period == 0 {
 		opts.Period = 30
+	}
+
+	if opts.Skew > maxSkew {
+		return false, 0, otp.ErrValidateSkewTooLarge
 	}
 
 	counter, err := getCounter(t, opts.InitialTime, opts.Period)
@@ -198,6 +202,8 @@ type GenerateOpts struct {
 	// Reader to use for generating TOTP Key.
 	Rand io.Reader
 }
+
+const maxSkew = 10
 
 var b32NoPadding = base32.StdEncoding.WithPadding(base32.NoPadding)
 
