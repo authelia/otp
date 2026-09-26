@@ -257,3 +257,20 @@ func TestValidateUnknownEncoder(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateMD5Unsupported(t *testing.T) {
+	secSha1 := base32.StdEncoding.EncodeToString([]byte("12345678901234567890"))
+	opts := ValidateOpts{Digits: otp.DigitsSix, Algorithm: otp.AlgorithmMD5}
+
+	for counter := uint64(0); counter < 64; counter++ {
+		code, err := GenerateCodeCustom(secSha1, counter, opts)
+		require.ErrorIs(t, err, otp.ErrValidateAlgorithmUnsupported)
+		require.Empty(t, code)
+
+		for _, passcode := range []string{"000000", "", "0000", "00000000"} {
+			valid, err := ValidateCustom(passcode, counter, secSha1, opts)
+			require.ErrorIs(t, err, otp.ErrValidateAlgorithmUnsupported)
+			require.False(t, valid)
+		}
+	}
+}

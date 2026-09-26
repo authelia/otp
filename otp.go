@@ -46,6 +46,9 @@ var ErrValidateInputInvalidLength = errors.New("input length unexpected")
 // The encoder is not one of the supported encoders.
 var ErrValidateEncoderUnknown = errors.New("encoder is not supported")
 
+// The algorithm is not supported for generating or validating passcodes.
+var ErrValidateAlgorithmUnsupported = errors.New("algorithm is not supported")
+
 // When generating a Key, the Issuer must be set.
 var ErrGenerateMissingIssuer = errors.New("issuer must be set")
 
@@ -213,6 +216,9 @@ const (
 	AlgorithmSHA1 Algorithm = iota
 	AlgorithmSHA256
 	AlgorithmSHA512
+
+	// AlgorithmMD5 is not supported for generating or validating passcodes as the MD5 digest is too short for the
+	// dynamic truncation defined in RFC 4226. Using it returns ErrValidateAlgorithmUnsupported.
 	AlgorithmMD5
 )
 
