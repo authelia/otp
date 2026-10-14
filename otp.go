@@ -61,6 +61,9 @@ var ErrGenerateMissingIssuer = errors.New("issuer must be set")
 // When generating a Key, the Account Name must be set.
 var ErrGenerateMissingAccountName = errors.New("accountName must be set")
 
+// When generating a Key, the Issuer must not contain a colon as it separates the Issuer from the Account Name.
+var ErrGenerateIssuerInvalid = errors.New("issuer must not contain a colon")
+
 // When generating a Key, the SecretSize must be between 16 and 128 bytes.
 var ErrGenerateSecretSizeInvalid = errors.New("secret size must be between 16 and 128 bytes")
 
