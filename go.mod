@@ -2,7 +2,7 @@ module github.com/authelia/otp
 
 go 1.24.0
 
-toolchain go1.27.2
+toolchain go1.27.3
 
 require (
 	github.com/boombuler/barcode v1.1.0
