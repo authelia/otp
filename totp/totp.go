@@ -212,6 +212,10 @@ func Generate(opts GenerateOpts) (*otp.Key, error) {
 		return nil, otp.ErrGenerateMissingAccountName
 	}
 
+	if !internal.IsAlgorithmSupported(opts.Algorithm) {
+		return nil, otp.ErrValidateAlgorithmUnsupported
+	}
+
 	if opts.Period == 0 {
 		opts.Period = 30
 	}

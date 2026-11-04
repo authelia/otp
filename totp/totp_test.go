@@ -437,3 +437,36 @@ func TestGenerateSecretSize(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []byte("helloworld"), secret)
 }
+
+func TestValidateAlgorithmInvalid(t *testing.T) {
+	secSha1 := base32.StdEncoding.EncodeToString([]byte("12345678901234567890"))
+	n := time.Unix(59, 0).UTC()
+
+	for _, algorithm := range []otp.Algorithm{-1, 4, 99} {
+		t.Run(fmt.Sprint(int(algorithm)), func(t *testing.T) {
+			opts := ValidateOpts{Digits: otp.DigitsSix, Algorithm: algorithm, Skew: 1}
+
+			code, err := GenerateCodeCustom(secSha1, n, opts)
+			require.ErrorIs(t, err, otp.ErrValidateAlgorithmUnsupported)
+			require.Empty(t, code)
+
+			valid, err := ValidateCustom("000000", secSha1, n, opts)
+			require.ErrorIs(t, err, otp.ErrValidateAlgorithmUnsupported)
+			require.False(t, valid)
+		})
+	}
+}
+
+func TestGenerateAlgorithmUnsupported(t *testing.T) {
+	for _, algorithm := range []otp.Algorithm{otp.AlgorithmMD5, -1, 4, 99} {
+		t.Run(fmt.Sprint(int(algorithm)), func(t *testing.T) {
+			k, err := Generate(GenerateOpts{
+				Issuer:      "SnakeOil",
+				AccountName: "alice@example.com",
+				Algorithm:   algorithm,
+			})
+			require.ErrorIs(t, err, otp.ErrValidateAlgorithmUnsupported)
+			require.Nil(t, k)
+		})
+	}
+}
