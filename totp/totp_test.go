@@ -437,3 +437,25 @@ func TestGenerateSecretSize(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []byte("helloworld"), secret)
 }
+
+func TestValidateSkewLimit(t *testing.T) {
+	secSha1 := base32.StdEncoding.EncodeToString([]byte("12345678901234567890"))
+	n := time.Unix(1111111109, 0).UTC()
+
+	code, err := GenerateCodeCustom(secSha1, n.Add(10*30*time.Second), ValidateOpts{Digits: otp.DigitsSix})
+	require.NoError(t, err)
+
+	valid, step, err := ValidateCustomStep(code, secSha1, n, ValidateOpts{Digits: otp.DigitsSix, Skew: 10})
+	require.NoError(t, err)
+	require.True(t, valid)
+	require.Equal(t, uint64(1111111109/30+10), step)
+
+	for _, skew := range []uint{11, 1000000, math.MaxUint} {
+		t.Run(fmt.Sprint(skew), func(t *testing.T) {
+			valid, step, err := ValidateCustomStep(code, secSha1, n, ValidateOpts{Digits: otp.DigitsSix, Skew: skew})
+			require.ErrorIs(t, err, otp.ErrValidateSkewTooLarge)
+			require.False(t, valid)
+			require.Zero(t, step)
+		})
+	}
+}

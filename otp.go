@@ -55,6 +55,9 @@ var ErrValidateTimeBeforeInitialTime = errors.New("time is before the initial ti
 // The number of digits is not between 1 and 10.
 var ErrValidateDigitsInvalid = errors.New("digits must be between 1 and 10")
 
+// The skew exceeds the maximum permitted number of periods either side of the current time.
+var ErrValidateSkewTooLarge = errors.New("skew exceeds the maximum permitted value")
+
 // When generating a Key, the Issuer must be set.
 var ErrGenerateMissingIssuer = errors.New("issuer must be set")
 
