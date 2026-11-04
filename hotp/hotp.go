@@ -199,7 +199,7 @@ func ValidateCustom(passcode string, counter uint64, secret string, opts Validat
 
 // GenerateOpts provides options for .Generate()
 type GenerateOpts struct {
-	// Name of the issuing Organization/Company.
+	// Name of the issuing Organization/Company. Must not contain a colon.
 	Issuer string
 	// Name of the User's Account (eg, email address)
 	AccountName string
@@ -224,6 +224,10 @@ func Generate(opts GenerateOpts) (*otp.Key, error) {
 	// url encode the Issuer/AccountName
 	if opts.Issuer == "" {
 		return nil, otp.ErrGenerateMissingIssuer
+	}
+
+	if strings.Contains(opts.Issuer, ":") {
+		return nil, otp.ErrGenerateIssuerInvalid
 	}
 
 	if opts.AccountName == "" {
