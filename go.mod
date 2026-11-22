@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.27.4
 
 require (
-	github.com/boombuler/barcode v1.1.0
+	github.com/boombuler/barcode v1.1.1
 	github.com/stretchr/testify v1.12.1
 )
 
